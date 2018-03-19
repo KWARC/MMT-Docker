@@ -1,32 +1,45 @@
 FROM openjdk:jre-alpine
 
-# Configure sbt
-ENV SBT_URL=https://dl.bintray.com/sbt/native-packages/sbt \
-    SBT_RELEASE=0.13.15 \
-    PATH=/opt/sbt/bin:${PATH}
+# Build dependencies
+RUN apk --no-cache --no-progress add bash git curl wget
+
+# Get sbt
+ENV SBT_URL=https://dl.bintray.com/sbt/native-packages/sbt
+ENV SBT_RELEASE=0.13.15
+ENV PATH=/opt/sbt/bin:${PATH}
 
 # Install sbt
-RUN apk --no-cache --no-progress add --virtual build-deps curl wget \
-  && mkdir -p /opt && cd /opt \
-  && curl -jksSL "${SBT_URL}/${SBT_RELEASE}/sbt-${SBT_RELEASE}.tgz" | tar -xzf - \
-  && apk --no-progress del build-deps \
-  && rm -rf /var/cache/apk/*
+RUN mkdir -p /opt
+WORKDIR /opt
+RUN curl -jksSL "${SBT_URL}/${SBT_RELEASE}/sbt-${SBT_RELEASE}.tgz" | tar -xzf -
+RUN rm -rf /var/cache/apk/*
 
-# Install git
-RUN apk --no-cache --no-progress add bash git \
-    && rm -rf /var/cache/apk/*
+#Build MMT
+RUN mkdir -p /build/MMT
 
-# Configure MMT
-ENV MMT_BRANCH master
+ENV MMT_BRANCH release
+RUN git clone -b $MMT_BRANCH --depth 1 https://github.com/UniFormal/MMT /build/MMT
+WORKDIR /build/MMT/src
+RUN sbt deploy
 
-# Install MMT
-RUN git clone -b $MMT_BRANCH --depth 1 https://github.com/UniFormal/MMT /tmp/MMT \
-  && cd /tmp/MMT/src && sbt deploy && cd /root/ \
-  && mkdir -p /root/MMT/deploy \
-  && cp /tmp/MMT/deploy/mmt.jar /root/MMT/deploy/mmt.jar \
-  && cp /tmp/MMT/deploy/mmt /root/MMT/deploy/mmt \
-  && ln -s /root/content/MathHub/mmtrc /root/MMT/deploy/mmtrc \
-  && rm -rf /tmp/MMT
+# Runtime dependencies
+FROM openjdk:jre-alpine
+RUN apk --no-cache --no-progress add bash git
 
-VOLUME /root/content/MathHub
-ENTRYPOINT /root/MMT/deploy/mmt
+# Notice that "server on [port]" will not just work inside a docker container
+# and "server on [port] 0.0.0.0" should be used instead
+VOLUME /content
+EXPOSE 8080
+
+# Setup folder structure
+RUN mkdir -p /root/MMT/deploy \
+    && mkdir -p /root/content \
+    && ln -s /content/ /root/content/ \
+    && mkdir -p /root/content/MathHub \
+    && ln -s /content/mmtrc /root/MMT/deploy/mmtrc
+
+# Copy over the jar
+COPY --from=0 /build/MMT/deploy/mmt.jar /root/MMT/deploy/mmt.jar
+
+# And set the entry point
+ENTRYPOINT ["java", "-jar", "/root/MMT/deploy/mmt.jar"]
