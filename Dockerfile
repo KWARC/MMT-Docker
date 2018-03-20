@@ -38,8 +38,8 @@ RUN mkdir -p /root/MMT/deploy \
     && mkdir -p /root/content/MathHub \
     && ln -s /content/mmtrc /root/MMT/deploy/mmtrc
 
-# Copy over the jar
+# Copy over the MMT jar
 COPY --from=0 /build/MMT/deploy/mmt.jar /root/MMT/deploy/mmt.jar
 
-# And set the entry point
+# The entrypoint is the MMT jar
 ENTRYPOINT ["java", "-jar", "/root/MMT/deploy/mmt.jar"]
