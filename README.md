@@ -42,3 +42,8 @@ To override this behaviour, and e.g. start the [MMT Server](https://uniformal.gi
 ## Caveats
 
 Because of the way docker works, any server running inside the docker container (including the MMT webserver) can not simply bind to localhost. This means that running `server on 8080` from the MMT shell has no effect. Instead, `server on 8080 0.0.0.0` should be used. 
+
+
+## Image Tags
+* `kwarc/mmt:latest`: The latest MMT release (default)
+* `kwarc/mmt:release_10`: MMT Release 10
