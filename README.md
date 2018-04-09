@@ -1,5 +1,7 @@
 # MMT-Docker
 
+** This repository has been archived and the Dockerfile integrated into the main MMT repository. **
+
 This respository contains a [Dockerfile](https://www.docker.com) for MMT. 
 It is approximatly 135 MB in size and published as `kwarc/mmt` under DockerHub. 
 
